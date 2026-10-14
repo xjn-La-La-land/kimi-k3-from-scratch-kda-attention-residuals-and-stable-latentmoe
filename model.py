@@ -7,8 +7,6 @@ Assembled from your step-by-step solutions.
 import numpy as np
 
 # Step 1 - short_conv
-import numpy as np
-
 def short_conv(x, w):
     """Causal depthwise conv: y[t,c] = sum_j w[j,c] * x[t-(K-1)+j, c].
 
@@ -449,134 +447,134 @@ def per_head_muon(M, n_heads, n_iters=5):
 
 # Step 28 - mini_k3_forward
 def mini_k3_forward(tokens, seed):
-     """Miniature Kimi K3 forward pass. Returns (T, 17) logits.
+    """Miniature Kimi K3 forward pass. Returns (T, 17) logits.
 
-     Parameter creation order (all rng.normal(0.0, 0.3, size=...)):
-      emb (17, 16)
-      then for each layer of hybrid_schedule(1):
-        wq_res (16,)
-        KDA: Wq (16,8), Wk (16,8), Wv (16,8), cq (3,8), ck (3,8), cv (3,8),
-             wb (16,), Wd1 (16,4), Wd2 (4,8), ba (8,), Wg (16,8), Wo (8,16)
-             (bb = 0.0 and A = 0.0 are constants, not drawn)
-        MLA: Wq (16,16), Wc (16,8), Wk_up (8,16), Wv_up (8,16),
-             Wg (16,16), Wo (16,16)
-        MoE: Wdown (16,8), Wup (8,16), Wr (16,8), bias = zeros(8), k=2,
-             experts: 8 x (Wg (8,8), Wu (8,8)) drawn gate-then-up per expert,
-             shared: 2 x (Wg (16,16), Wu (16,16)) drawn gate-then-up
-      w_final (16,)
-     """
-     rng = np.random.default_rng(seed)
-     def W(*shape):
-          return rng.normal(0.0, 0.3, size=shape)
+    Parameter creation order (all rng.normal(0.0, 0.3, size=...)):
+    emb (17, 16)
+    then for each layer of hybrid_schedule(1):
+    wq_res (16,)
+    KDA: Wq (16,8), Wk (16,8), Wv (16,8), cq (3,8), ck (3,8), cv (3,8),
+            wb (16,), Wd1 (16,4), Wd2 (4,8), ba (8,), Wg (16,8), Wo (8,16)
+            (bb = 0.0 and A = 0.0 are constants, not drawn)
+    MLA: Wq (16,16), Wc (16,8), Wk_up (8,16), Wv_up (8,16),
+            Wg (16,16), Wo (16,16)
+    MoE: Wdown (16,8), Wup (8,16), Wr (16,8), bias = zeros(8), k=2,
+            experts: 8 x (Wg (8,8), Wu (8,8)) drawn gate-then-up per expert,
+            shared: 2 x (Wg (16,16), Wu (16,16)) drawn gate-then-up
+    w_final (16,)
+    """
+    rng = np.random.default_rng(seed)
+    def W(*shape):
+        return rng.normal(0.0, 0.3, size=shape)
 
-     # 模型与词表
-     vocab_size = 17
-     d_model = 16
+    # 模型与词表
+    vocab_size = 17
+    d_model = 16
 
-     # KDA
-     dk = 8
-     dv = 8
-     conv_kernel_size = 3
-     decay_rank = 4
+    # KDA
+    dk = 8
+    dv = 8
+    conv_kernel_size = 3
+    decay_rank = 4
 
-     # MLA
-     n_heads = 2
-     dh = 8
-     d_kv_latent = 8
+    # MLA
+    n_heads = 2
+    dh = 8
+    d_kv_latent = 8
 
-     # MoE
-     d_moe_latent = 8
-     n_experts = 8
-     top_k = 2
-     n_shared_experts = 2
-     
-     embedding = W(vocab_size, d_model)
-     layers = []
+    # MoE
+    d_moe_latent = 8
+    n_experts = 8
+    top_k = 2
+    n_shared_experts = 2
+    
+    embedding = W(vocab_size, d_model)
+    layers = []
 
-     for kind in hybrid_schedule(1):
-          wq_res = W(d_model)
+    for kind in hybrid_schedule(1):
+        wq_res = W(d_model)
 
-          if kind == "KDA":
-               attn = {
-                    "Wq": W(d_model, dk),
-                    "Wk": W(d_model, dk),
-                    "Wv": W(d_model, dv),
-                    "cq": W(conv_kernel_size, dk),
-                    "ck": W(conv_kernel_size, dk),
-                    "cv": W(conv_kernel_size, dv),
-                    "wb": W(d_model),
-                    "Wd1": W(d_model, decay_rank),
-                    "Wd2": W(decay_rank, dk),
-                    "ba": W(dk),
-                    "Wg": W(d_model, dv),
-                    "Wo": W(dv, d_model),
-                    "bb": 0.0,
-               }
-          else: # MLA
-               attn = {
-                    "Wq": W(d_model, n_heads * dh),
-                    "Wc": W(d_model, d_kv_latent),
-                    "Wk_up": W(d_kv_latent, n_heads * dh),
-                    "Wv_up": W(d_kv_latent, n_heads * dh),
-                    "Wg": W(d_model, n_heads * dh),
-                    "Wo": W(n_heads * dh, d_model),
-               }
+        if kind == "KDA":
+            attn = {
+                "Wq": W(d_model, dk),
+                "Wk": W(d_model, dk),
+                "Wv": W(d_model, dv),
+                "cq": W(conv_kernel_size, dk),
+                "ck": W(conv_kernel_size, dk),
+                "cv": W(conv_kernel_size, dv),
+                "wb": W(d_model),
+                "Wd1": W(d_model, decay_rank),
+                "Wd2": W(decay_rank, dk),
+                "ba": W(dk),
+                "Wg": W(d_model, dv),
+                "Wo": W(dv, d_model),
+                "bb": 0.0,
+            }
+        else: # MLA
+            attn = {
+                "Wq": W(d_model, n_heads * dh),
+                "Wc": W(d_model, d_kv_latent),
+                "Wk_up": W(d_kv_latent, n_heads * dh),
+                "Wv_up": W(d_kv_latent, n_heads * dh),
+                "Wg": W(d_model, n_heads * dh),
+                "Wo": W(n_heads * dh, d_model),
+            }
 
-          moe = {
-               "Wdown": W(d_model, d_moe_latent),
-               "Wup": W(d_moe_latent, d_model),
-               "Wr": W(d_model, n_experts),
-               "bias": np.zeros(n_experts),
-               "k": 2,
-               "experts": [
-                    (
-                         W(d_moe_latent, d_moe_latent),
-                         W(d_moe_latent, d_moe_latent),
-                    )
-                    for _ in range(n_experts)
-               ],
-               "shared": [
-                    (
-                         W(d_model, d_model),
-                         W(d_model, d_model),
-                    )
-                    for _ in range(n_shared_experts)
-               ],
-          }
+        moe = {
+            "Wdown": W(d_model, d_moe_latent),
+            "Wup": W(d_moe_latent, d_model),
+            "Wr": W(d_model, n_experts),
+            "bias": np.zeros(n_experts),
+            "k": 2,
+            "experts": [
+                (
+                    W(d_moe_latent, d_moe_latent),
+                    W(d_moe_latent, d_moe_latent),
+                )
+                for _ in range(n_experts)
+            ],
+            "shared": [
+                (
+                    W(d_model, d_model),
+                    W(d_model, d_model),
+                )
+                for _ in range(n_shared_experts)
+            ],
+        }
 
-          layers.append((kind, wq_res, attn, moe))
+        layers.append((kind, wq_res, attn, moe))
 
-     w_final = W(d_model)
+    w_final = W(d_model)
 
-     # 执行各层 froward
-     sources = [embedding[np.asarray(tokens, dtype=np.int64)]]  # (T, 16)
+    # 执行各层 froward
+    sources = [embedding[np.asarray(tokens, dtype=np.int64)]]  # (T, 16)
 
-     for kind, wq_res, attn, moe in layers:
-          h = attnres_full(wq_res, sources)  # (T, 16)
+    for kind, wq_res, attn, moe in layers:
+        h = attnres_full(wq_res, sources)  # (T, 16)
 
-          if kind == "KDA":
-               q, k, v = kda_qkv(h, attn)
-               beta, decay_logits = kda_gates(h, attn)
-               alpha = lower_bounded_decay(decay_logits, A=0.0)
+        if kind == "KDA":
+            q, k, v = kda_qkv(h, attn)
+            beta, decay_logits = kda_gates(h, attn)
+            alpha = lower_bounded_decay(decay_logits, A=0.0)
 
-               # o, _ = kda_recurrence(q, k, v, alpha, beta)
-               o, _ = kda_chunkwise(q, k, v, alpha, beta, chunk_size=4)
-               a = kda_output_gate(o, h, attn["Wg"], attn["Wo"])
-          else:
-               o = nope_attention(
-                    h,
-                    attn["Wq"],
-                    attn["Wc"],
-                    attn["Wk_up"],
-                    attn["Wv_up"],
-                    n_heads=2,
-               )
-               a = mla_output_gate(o, h, attn["Wg"], attn["Wo"])
+            # o, _ = kda_recurrence(q, k, v, alpha, beta)
+            o, _ = kda_chunkwise(q, k, v, alpha, beta, chunk_size=4)
+            a = kda_output_gate(o, h, attn["Wg"], attn["Wo"])
+        else:
+            o = nope_attention(
+                h,
+                attn["Wq"],
+                attn["Wc"],
+                attn["Wk_up"],
+                attn["Wv_up"],
+                n_heads=2,
+            )
+            a = mla_output_gate(o, h, attn["Wg"], attn["Wo"])
 
-          f = a + stable_latent_moe(a, moe)  # (T, 16)
-          sources.append(f)
+        f = a + stable_latent_moe(a, moe)  # (T, 16)
+        sources.append(f)
 
-     # 最终的 depth read 与词表投影
-     h_out = attnres_full(w_final, sources)  # (T, 16)
-     return h_out @ embedding.T              # (T, 17)
+    # 最终的 depth read 与词表投影
+    h_out = attnres_full(w_final, sources)  # (T, 16)
+    return h_out @ embedding.T              # (T, 17)
 
